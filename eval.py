@@ -9,7 +9,7 @@ from dataset.dataset import VideoDataset
 from model.network import C3DVQANet
 from scipy.stats import spearmanr, pearsonr
 from opts import parse_opts
-from util.draw import mos_scatter 
+from tool.draw import mos_scatter 
 
 def test_model(model, device, criterion, dataloaders):
 
