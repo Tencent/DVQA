@@ -1,4 +1,5 @@
 __pycache__/
-runs
-save
-log
+/runs
+/save/*
+!/save/model_videoset_v3.pt
+/log
