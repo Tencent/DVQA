@@ -1,7 +1,6 @@
 import os
 import sys
 import torch
-import copy
 import json
 import numpy as np
 import torch.nn as nn
@@ -43,7 +42,7 @@ def test_model(model, device, criterion, dataloaders):
     ret['MOS'] = epoch_labels.tolist()
     ret['PRED'] = epoch_preds.tolist()
  
-    print(json.dumps(ret))
+    # print(json.dumps(ret))
 
     epoch_rmse = np.sqrt(np.mean((epoch_labels - epoch_preds)**2))
     print("{phase} RMSE: {rmse:.4f}".format(phase=phase, rmse=epoch_rmse))
@@ -53,7 +52,7 @@ def test_model(model, device, criterion, dataloaders):
         epoch_srocc = spearmanr(epoch_labels, epoch_preds)[0]
 
         print("{phase}:\t PLCC: {plcc:.4f}\t SROCC: {srocc:.4f}".format(phase=phase, plcc=epoch_plcc, srocc=epoch_srocc))
-        mos_scatter(ret['MOS'], ret['PRED'], 'test')
+
 
 if __name__=='__main__':
 
@@ -63,12 +62,13 @@ if __name__=='__main__':
     subj_dataset = opt.score_file_path
     load_checkpoint = opt.load_model
     MULTI_GPU_MODE = opt.multi_gpu
+    channel = opt.channel
     size_x = opt.size_x
     size_y = opt.size_y
     stride_x = opt.stride_x
     stride_y = opt.stride_y
 
-    video_dataset = {x: VideoDataset(subj_dataset, video_path, x, size_x, size_y, stride_x, stride_y) for x in ['test']}
+    video_dataset = {x: VideoDataset(subj_dataset, video_path, x, channel, size_x, size_y, stride_x, stride_y) for x in ['test']}
     dataloaders = {x: torch.utils.data.DataLoader(video_dataset[x], batch_size=1, shuffle=False, num_workers=4, drop_last=False) for x in ['test']}
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
