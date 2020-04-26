@@ -1,1 +1,0 @@
-python train.py --multi_gpu --video_dir yuv_dir --score_file_path ./dataset/csiq_subj_score_BQMall.json --load_model ./save/model_csiq.pt --save_model ./save/model_ft_csiq_BQMall.pt --size_x 112 --size_y 112 --stride_x 80 --stride_y 80 --learning_rate 3e-3 --weight_decay 1e-2 --epoch 100 >> ./save/ft_csiq_BQMall.log

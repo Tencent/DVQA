@@ -1,1 +1,0 @@
-python train.py --multi_gpu --video_dir yuv_dir --score_file_path ./dataset/videoset_subj_score_v2.json --save_model ./save/model_videoset_v2.pt --size_x 112 --size_y 112 --stride_x 80 --stride_y 80 --learning_rate 3e-3 --weight_decay 4e-2 --epochs 250 >> ./save/train_videoset_v2.log
