@@ -1,0 +1,1 @@
+python train.py --multi_gpu --video_dir /apdcephfs/private_tommyhqwang/YUV/PGC_YUV --score_file_path ./dataset/videoset_subj_score_v2.json --save_model ./save/model_videoset_v3.pt --log_file_name ./log/videoset_v3.log --size_x 112 --size_y 112 --stride_x 80 --stride_y 80 --learning_rate 3e-4 --weight_decay 1e-2 --epochs 256

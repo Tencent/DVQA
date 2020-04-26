@@ -1,0 +1,1 @@
+python train.py --multi_gpu --video_dir /dockerdata/CSIQ_YUV --score_file_path ./dataset/csiq_subj_score_BQTerrace_ParkScene.json --save_model ./save/model_csiq_bqt_pak.pt --log_file_name ./log/csiq_BQTerrace_ParkScene.log --size_x 112 --size_y 112 --stride_x 80 --stride_y 80 --learning_rate 3e-4 --weight_decay 1e-2 --epochs 250 
