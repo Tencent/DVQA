@@ -1,16 +1,19 @@
 import os
 import sys
-import copy
 import json
 import numpy as np
+import logging
 import torch
 import torch.nn as nn
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from scipy.stats import spearmanr, pearsonr
 from opts import parse_opts
 from model.network import C3DVQANet
 from dataset.dataset import VideoDataset
+from tool.draw import mos_scatter
 
+writer = SummaryWriter()
 
 def train_model(model, device, criterion, optimizer, scheduler, dataloaders, save_checkpoint, epoch_resume=1, num_epochs=25):
 
@@ -61,13 +64,28 @@ def train_model(model, device, criterion, optimizer, scheduler, dataloaders, sav
             epoch_labels = torch.cat(epoch_labels).flatten().data.cpu().numpy()
             epoch_preds = torch.cat(epoch_preds).flatten().data.cpu().numpy()
 
+            logging.info('epoch_labels: {}'.format(epoch_labels))
+            logging.info('epoch_preds: {}'.format(epoch_preds))
+
             epoch_plcc = pearsonr(epoch_labels, epoch_preds)[0]
             epoch_srocc = spearmanr(epoch_labels, epoch_preds)[0]
             epoch_rmse = np.sqrt(np.mean((epoch_labels - epoch_preds)**2))
 
-            print("{phase}-Loss: {loss:.4f}\t RMSE: {rmse:.4f}\t PLCC: {plcc:.4f}\t SROCC: {srocc:.4f}".format(phase=phase, loss=epoch_loss, rmse=epoch_rmse, plcc=epoch_plcc, srocc=epoch_srocc))
+            logging.info("{phase}-Loss: {loss:.4f}\t RMSE: {rmse:.4f}\t PLCC: {plcc:.4f}\t SROCC: {srocc:.4f}".format(phase=phase, loss=epoch_loss, rmse=epoch_rmse, plcc=epoch_plcc, srocc=epoch_srocc))
 
-            if phase == 'test' and save_checkpoint and epoch % 10 == 0:
+            if phase == 'train':
+                writer.add_scalar('Loss/train', epoch_loss, epoch)
+                writer.add_scalar('RMSE/train', epoch_rmse, epoch)
+                writer.add_scalar('PLCC/train', epoch_plcc, epoch)
+                writer.add_scalar('SROCC/train', epoch_srocc, epoch)
+            else:
+                writer.add_scalar('Loss/test', epoch_loss, epoch)
+                writer.add_scalar('RMSE/test', epoch_rmse, epoch)
+                writer.add_scalar('PLCC/test', epoch_plcc, epoch)
+                writer.add_scalar('SROCC/test', epoch_srocc, epoch)
+                writer.add_figure('Pred vs. MOS', mos_scatter(epoch_labels, epoch_preds), epoch)
+ 
+            if phase == 'test' and save_checkpoint:
                 _checkpoint = '{pt}_{epoch}'.format(pt=save_checkpoint, epoch=epoch)
                 torch.save({'epoch': epoch, 'model_state_dict': model.module.state_dict(), 'optimizer_state_dict': optimizer.state_dict()}, _checkpoint)
 
@@ -80,16 +98,21 @@ if __name__=='__main__':
     subj_dataset = opt.score_file_path
     save_checkpoint = opt.save_model
     load_checkpoint = opt.load_model
+    log_file_name = opt.log_file_name
     LEARNING_RATE = opt.learning_rate
     L2_REGULARIZATION = opt.weight_decay
     NUM_EPOCHS = opt.epochs
     MULTI_GPU_MODE = opt.multi_gpu
+    channel = opt.channel
     size_x = opt.size_x
     size_y = opt.size_y
     stride_x = opt.stride_x
     stride_y = opt.stride_y
 
-    video_dataset = {x: VideoDataset(subj_dataset, video_path, x, size_x, size_y, stride_x, stride_y) for x in ['train', 'test']}
+    logging.basicConfig(filename=log_file_name, filemode='w', format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+    logging.info('OK parse options')
+
+    video_dataset = {x: VideoDataset(subj_dataset, video_path, x, channel, size_x, size_y, stride_x, stride_y) for x in ['train', 'test']}
     dataloaders = {x: torch.utils.data.DataLoader(video_dataset[x], batch_size=1, shuffle=True, num_workers=8, drop_last=True) for x in ['train', 'test']}
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -97,10 +120,10 @@ if __name__=='__main__':
     if torch.cuda.device_count() > 1 and MULTI_GPU_MODE == True:
         device_ids = range(0, torch.cuda.device_count())
         model = torch.nn.DataParallel(C3DVQANet().to(device), device_ids=device_ids)
-        print("muti-gpu mode enabled, use {0:d} gpus".format(torch.cuda.device_count()))
+        logging.info("muti-gpu mode enabled, use {0:d} gpus".format(torch.cuda.device_count()))
     else:
         model = C3DVQANet().to(device)
-        print('use {0}'.format('cuda' if torch.cuda.is_available() else 'cpu'))
+        logging.info('use {0}'.format('cuda' if torch.cuda.is_available() else 'cpu'))
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE, weight_decay=L2_REGULARIZATION)
@@ -109,7 +132,7 @@ if __name__=='__main__':
 
     if os.path.exists(load_checkpoint):
         checkpoint = torch.load(load_checkpoint)
-        print("loading checkpoint")
+        logging.info("loading checkpoint")
 
         if torch.cuda.device_count() > 1 and MULTI_GPU_MODE == True:
             model.module.load_state_dict(checkpoint['model_state_dict'])
