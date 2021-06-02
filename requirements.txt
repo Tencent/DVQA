@@ -26,5 +26,5 @@ tensorboard==2.2.0
 tensorboard-plugin-wit==1.6.0.post3
 torch==1.4.0
 tqdm==4.43.0
-urllib3==1.25.8
+urllib3==1.26.5
 Werkzeug==1.0.1
