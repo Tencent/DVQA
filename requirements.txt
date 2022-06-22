@@ -10,7 +10,7 @@ idna==2.9
 kiwisolver==1.1.0
 Markdown==3.2.1
 matplotlib==3.0.3
-numpy==1.18.1
+numpy==1.22.0
 oauthlib==3.1.0
 protobuf==3.11.3
 pyasn1==0.4.8
